@@ -20,6 +20,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/users', ['IndexController', 'getUsers']);
     $r->addRoute('GET', '/test/{testNo}', ['IndexController', 'testDetail']);
     $r->addRoute('POST', '/test', ['IndexController', 'testPost']);
+    $r->addRoute('POST', '/email-user', ['IndexController', 'createEmailUser']);
     $r->addRoute('GET', '/jwt', ['MainController', 'validateJwt']);
     $r->addRoute('POST', '/jwt', ['MainController', 'createJwt']);
 
