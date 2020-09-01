@@ -66,68 +66,32 @@ function testPost($name)
 
 }
 
-function createEmailUser($userEmail,$userPw,$nickName)
+function createEmailUser($userEmail,$userPw,$nickName,$jwt)
 {
     $pdo = pdoSqlConnect();
-    $query = "INSERT INTO email_user (userEmail,userPw,nickName) VALUES (?,?,?);";
+    $query = "INSERT INTO email_user (userEmail,userPw,nickName,jwt) VALUES (?,?,?,?);";
 
     $st = $pdo->prepare($query);
-    $st->execute([$userEmail,$userPw,$nickName]);
+    $st->execute([$userEmail,$userPw,$nickName,$jwt]);
 
     $st = null;
     $pdo = null;
 
 }
-function isValidUserEmail($userEmail){
-    $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM email_user WHERE userEmail= ?) AS exist;";
 
+function loginEmailUser($userEmail,$userPw)
+{
+    $pdo = pdoSqlConnect();
+    $query = "select nickName from email_user where userEmail=? and userPw=?;";
 
     $st = $pdo->prepare($query);
-    //    $st->execute([$param,$param]);
-    $st->execute([$userEmail]);
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
+    $st->execute([$userEmail,$userPw]);
 
-    $st=null;$pdo = null;
-
-    return intval($res[0]["exist"]);
+    $st = null;
+    $pdo = null;
 
 }
 
-function isValidUserName($nickName){
-    $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM email_user WHERE nickName= ?) AS exist;";
-
-
-    $st = $pdo->prepare($query);
-    //    $st->execute([$param,$param]);
-    $st->execute([$nickName]);
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
-
-    $st=null;$pdo = null;
-
-    return intval($res[0]["exist"]);
-
-}
-
-function isValidUser($id, $pw){
-    $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM User WHERE userId= ? AND userPw = ?) AS exist;";
-
-
-    $st = $pdo->prepare($query);
-    //    $st->execute([$param,$param]);
-    $st->execute([$id, $pw]);
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
-
-    $st=null;$pdo = null;
-
-    return intval($res[0]["exist"]);
-
-}
 
 
 // CREATE

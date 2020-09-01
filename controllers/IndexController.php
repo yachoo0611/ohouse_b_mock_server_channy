@@ -71,30 +71,6 @@ try {
             echo json_encode($res, JSON_NUMERIC_CHECK);
             break;
 
-        case "createEmailUser":
-            http_response_code(200);
-
-            if(isValidUserEmail($req->userEmail)){
-                $res->isSuccess = FALSE;
-                $res->code = 200;
-                $res->message = "이미 '이메일 로그인'으로 가입하신 이메일입니다.'이메일 로그인'으로 로그인해주세요.";
-                echo json_encode($res, JSON_NUMERIC_CHECK);
-                break;
-            }
-            elseif(isValidUserName($req->nickName)){
-                $res->isSuccess = FALSE;
-                $res->code = 201;
-                $res->message = "사용 중인 별명입니다.";
-                echo json_encode($res, JSON_NUMERIC_CHECK);
-                break;
-            }
-            else{
-                createEmailUser($req->userEmail,$req->userPw,$req->nickName);
-                $res->isSuccess = TRUE;
-                $res->code = 100;
-                $res->message = "user 생성 완료";
-                echo json_encode($res, JSON_NUMERIC_CHECK);}
-            break;
     }
 } catch (\Exception $e) {
     return getSQLErrorException($errorLogs, $e, $req);
