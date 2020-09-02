@@ -44,6 +44,15 @@ try {
             $res->message = "테스트 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK);
             break;
+
+        case "getStoreCategory":
+            http_response_code(200);
+            $res->result = getStoreCategory();
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "카테고리 조회 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK);
+            break;
         /*
          * API No. 0
          * API Name : 테스트 Path Variable API

@@ -4,7 +4,7 @@
 
 function isValidUserEmail($userEmail){
     $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM email_user WHERE userEmail= ?) AS exist;";
+    $query = "SELECT EXISTS(SELECT * FROM user WHERE userEmail= ?) AS exist;";
 
 
     $st = $pdo->prepare($query);
@@ -21,7 +21,7 @@ function isValidUserEmail($userEmail){
 
 function isValidUserNickName($nickName){
     $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM email_user WHERE nickName= ?) AS exist;";
+    $query = "SELECT EXISTS(SELECT * FROM user WHERE nickName= ?) AS exist;";
 
 
     $st = $pdo->prepare($query);
@@ -38,7 +38,7 @@ function isValidUserNickName($nickName){
 
 function isValidUser($userEmail, $userPw){
     $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM email_user WHERE userEmail= ? AND userPw = ?) AS exist;";
+    $query = "SELECT EXISTS(SELECT * FROM user WHERE userEmail= ? AND userPw = ?) AS exist;";
 
 
     $st = $pdo->prepare($query);
@@ -56,7 +56,7 @@ function isValidUser($userEmail, $userPw){
 
 function isValidUserPw( $userPw){
     $pdo = pdoSqlConnect();
-    $query = "SELECT EXISTS(SELECT * FROM email_user WHERE userPw = ?) AS exist;";
+    $query = "SELECT EXISTS(SELECT * FROM user WHERE userPw = ?) AS exist;";
 
 
     $st = $pdo->prepare($query);

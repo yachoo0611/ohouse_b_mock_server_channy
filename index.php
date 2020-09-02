@@ -1,7 +1,10 @@
 <?php
 require './pdos/DatabasePdo.php';
 require './pdos/IndexPdo.php';
+require './pdos/StorePdo.php';
 require './pdos/ValidationPdo.php';
+
+//require './pdos/EmailUserPdo.php';
 require './vendor/autoload.php';
 
 use \Monolog\Logger as Logger;
@@ -21,8 +24,16 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/users', ['IndexController', 'getUsers']);
     $r->addRoute('GET', '/test/{testNo}', ['IndexController', 'testDetail']);
     $r->addRoute('POST', '/test', ['IndexController', 'testPost']);
+
+//-------------------------email유저 회원가입 ----------------------------------------
     $r->addRoute('POST', '/email/sign-up', ['EmailUser', 'createEmailUser',]);
     $r->addRoute('POST', '/email/sign-in', ['EmailUser', 'loginEmailUser',]);
+//--------------------------스토어 카테고리-----------------------------------------
+
+    $r->addRoute('GET', '/store/category', ['StoreController', 'getStoreCategory']);
+
+
+
     $r->addRoute('GET', '/jwt', ['MainController', 'validateJwt']);
     $r->addRoute('POST', '/jwt', ['MainController', 'createJwt']);
 
@@ -89,6 +100,11 @@ switch ($routeInfo[0]) {
                 $handler = $routeInfo[1][1];
                 $vars = $routeInfo[2];
                 require './controllers/EmailUser.php';
+                break;
+            case 'StoreController':
+                $handler = $routeInfo[1][1];
+                $vars = $routeInfo[2];
+                require './controllers/StoreController.php';
                 break;
             /*case 'EventController':
                 $handler = $routeInfo[1][1]; $vars = $routeInfo[2];
