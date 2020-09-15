@@ -49,7 +49,7 @@ try {
                 else if (!preg_match($validPw, "$req->userPw")) {
                     $res->isSucces = FALSE;
                     $res->code = 204;
-                    $res->message = "비밀번호는 8자 이상 16자 이하입니다.";
+                    $res->message = "비밀번호는 숫자,영문 포함 8자 이상 16자 이하입니다.";
                     echo json_encode($res, JSON_NUMERIC_CHECK);
                     return;
                 }
@@ -95,6 +95,238 @@ try {
                 $res->code = 100;
                 $res->message = "user 로그인 성공 & jwt 토큰 발급 완료";
                 echo json_encode($res, JSON_NUMERIC_CHECK);}
+            break;
+
+
+
+        case "loginEmailUserNickName":
+            http_response_code(200);
+            $nickName=$vars['nickName'];
+
+            if(isValidUserNickName($nickName)){
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "사용 중인 별명입니다.";
+                $res->result=loginEmailUserNickName($nickName,$nickName);
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                return;
+            }
+            else{
+
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "적합한 닉네임입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);}
+            break;
+
+
+
+        case "updateUserProfile":
+            http_response_code(200);
+
+            // 1. JWT 유효성검사
+            $jwt = $_SERVER["HTTP_X_ACCESS_TOKEN"];
+            // 2. Payload 에서 userIdx 추출
+            $data = getDataByJWToken($jwt, JWT_SECRET_KEY);
+            $email = $data->userEmail;
+            $userIdx =getUseridByEmail($email);
+
+            if (!isValidHeader($jwt, JWT_SECRET_KEY)) {
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "유효하지 않은 토큰입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+
+            updateUserProfile($req->userIntro,$req->userSite,$userIdx);
+            $res->isSuccess = TRUE;
+            $res->code = 200;
+            $res->message = "유저 프로필 정보 변경에 성공하였습니다";
+            echo json_encode($res, JSON_NUMERIC_CHECK);
+            break;
+
+        case "getUserScrap":
+            http_response_code(200);
+
+            // 1. JWT 유효성검사
+            $jwt = $_SERVER["HTTP_X_ACCESS_TOKEN"];
+            // 2. Payload 에서 userIdx 추출
+            $data = getDataByJWToken($jwt, JWT_SECRET_KEY);
+            $email = $data->userEmail;
+            $userIdx =getUseridByEmail($email);
+
+            if (!isValidHeader($jwt, JWT_SECRET_KEY)) {
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "유효하지 않은 토큰입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            elseif (getUserScrap($userIdx)==null){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "스크랩한 게시글이 없습니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+
+
+            $res->result=getUserScrap($userIdx);
+            $res->isSuccess = TRUE;
+            $res->code = 200;
+            $res->message = "유저 스크랩 조회 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK);
+            break;
+
+
+        case "createUserScrap":
+            http_response_code(200);
+
+            // 1. JWT 유효성검사
+            $jwt = $_SERVER["HTTP_X_ACCESS_TOKEN"];
+            // 2. Payload 에서 userIdx 추출
+            $data = getDataByJWToken($jwt, JWT_SECRET_KEY);
+            $email = $data->userEmail;
+            $userIdx =getUseridByEmail($email);
+
+            if (!isValidHeader($jwt, JWT_SECRET_KEY)) {
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "유효하지 않은 토큰입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            elseif(validProductIdx($userIdx,$req->productIdx)){
+                deleteUserScrap($userIdx,$req->productIdx);
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "이미 저장된 productIdx이므로 삭제하였습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+
+            }
+
+            createUserScrap($userIdx,$req->productIdx);
+            $res->isSuccess = TRUE;
+            $res->code = 200;
+            $res->message = "스크랩 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK);
+            break;
+
+
+
+
+
+
+        case "getUserPw":
+//            $content=showPw($req->userEmail);
+            http_response_code(200);
+            include_once('/var/www/html/api-server/pdos/mailer.lib.php');
+            if(!isValidUserEmail($req->userEmail)or empty($req->userEmail) ){
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "등록되지 않은 이메일 입니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }else {
+                $pw=getPwByEmail($req->userEmail);
+                $jbstr=implode(' ',$pw);
+                mailer("오늘의 집", "dpcksdl3@naver.com", $req->userEmail, "[오늘의집] 비밀번호 재설정 안내","<h1>회원님, 안녕하세요.<br>비밀번호 안내 메일입니다</h1><br>
+<h1>회원님의 비밀번호는----> $jbstr <----입니다.</h1><br><h2>*만약 본인이 비밀번호 재설정 신청을 한 것이 아니라면,
+      본 메일을 무시해 주세요.<br> 회원님이 비밀번호를 변경하기 전에는 계정의 비밀번호는 바뀌지 않습니다.<br>
+      *스마트폰에서 비밀번호 찾기가 잘 안되실 경우,<br>PC로 메일을 확인하시면 정상적으로 변경하실 수 있습니다.</h2>", 1);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "메일 전송 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+
+        case "getProductBasket":
+            http_response_code(200);
+
+//              $productIdx=$vars['productIdx'];
+            // 1. JWT 유효성검사
+            $jwt = $_SERVER["HTTP_X_ACCESS_TOKEN"];
+            // 2. Payload 에서 userIdx 추출
+            $data = getDataByJWToken($jwt, JWT_SECRET_KEY);
+            $email = $data->userEmail;
+            $userIdx =getUseridByEmail($email);
+
+            if (!isValidHeader($jwt, JWT_SECRET_KEY)) {
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "유효하지 않은 토큰입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            else{
+                $res->result =getProductBasket($userIdx);
+                $res->price =getBasketPrice($userIdx);
+                $res->isSuccess = TRUE;
+                $res->code = 200;
+                $res->message = "유저 장바구니 조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;}
+
+        case "updateUserBasket":
+            http_response_code(200);
+
+            // 1. JWT 유효성검사
+            $jwt = $_SERVER["HTTP_X_ACCESS_TOKEN"];
+            // 2. Payload 에서 userIdx 추출
+            $data = getDataByJWToken($jwt, JWT_SECRET_KEY);
+            $email = $data->userEmail;
+            $userIdx =getUseridByEmail($email);
+
+            if (!isValidHeader($jwt, JWT_SECRET_KEY)) {
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "유효하지 않은 토큰입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+
+            updateUserBasket($req->productCount,$userIdx,$req->productIdx);
+            $res->isSuccess = TRUE;
+            $res->code = 200;
+            $res->message = "장바구니 변경에 성공하였습니다";
+            echo json_encode($res, JSON_NUMERIC_CHECK);
+            break;
+
+
+        case "deleteUserBasket":
+            http_response_code(200);
+
+            // 1. JWT 유효성검사
+            $jwt = $_SERVER["HTTP_X_ACCESS_TOKEN"];
+            // 2. Payload 에서 userIdx 추출
+            $data = getDataByJWToken($jwt, JWT_SECRET_KEY);
+            $email = $data->userEmail;
+            $userIdx =getUseridByEmail($email);
+
+            if (!isValidHeader($jwt, JWT_SECRET_KEY)) {
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "유효하지 않은 토큰입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+
+            deleteUserBasket($userIdx,$req->productIdx);
+            $res->isSuccess = TRUE;
+            $res->code = 200;
+            $res->message = "장바구니 삭제에 성공하였습니다";
+            echo json_encode($res, JSON_NUMERIC_CHECK);
             break;
     }
 }catch (\Exception $e) {

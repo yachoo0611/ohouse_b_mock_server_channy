@@ -3,8 +3,9 @@ require './pdos/DatabasePdo.php';
 require './pdos/IndexPdo.php';
 require './pdos/StorePdo.php';
 require './pdos/ValidationPdo.php';
+require './pdos/mailer.lib.php';
+require './pdos/EmailUserPdo.php';
 
-//require './pdos/EmailUserPdo.php';
 require './vendor/autoload.php';
 
 use \Monolog\Logger as Logger;
@@ -14,7 +15,7 @@ date_default_timezone_set('Asia/Seoul');
 ini_set('default_charset', 'utf8mb4');
 
 //에러출력하게 하는 코드
-//error_reporting(E_ALL); ini_set("display_errors", 1);
+error_reporting(E_ALL); ini_set("display_errors", 1);
 
 //Main Server API
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
@@ -25,13 +26,40 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/test/{testNo}', ['IndexController', 'testDetail']);
     $r->addRoute('POST', '/test', ['IndexController', 'testPost']);
 
-//-------------------------email유저 회원가입 ----------------------------------------
+//-------------------------유저 관련 api ----------------------------------------
     $r->addRoute('POST', '/email/sign-up', ['EmailUser', 'createEmailUser',]);
     $r->addRoute('POST', '/email/sign-in', ['EmailUser', 'loginEmailUser',]);
+    $r->addRoute('GET', '/email/sign-up/{nickName}', ['EmailUser', 'loginEmailUserNickName',]);
+    $r->addRoute('GET', '/user/basket', ['EmailUser', 'getProductBasket',]);
+    $r->addRoute('PATCH', '/email/profile', ['EmailUser', 'updateUserProfile',]);
+    $r->addRoute('POST', '/email/pw-reset', ['EmailUser', 'getUserPw',]);//패스워드 찾기
+    $r->addRoute('POST', '/user/scrap', ['EmailUser', 'createUserScrap',]);
+    $r->addRoute('GET', '/user/scrap', ['EmailUser', 'getUserScrap',]);
+    $r->addRoute('PATCH', '/user/basket', ['EmailUser', 'updateUserBasket',]);
+    $r->addRoute('DELETE', '/user/basket', ['EmailUser', 'deleteUserBasket',]);
+
 //--------------------------스토어 카테고리-----------------------------------------
 
     $r->addRoute('GET', '/store/category', ['StoreController', 'getStoreCategory']);
-
+    $r->addRoute('GET', '/store/category/detail', ['StoreController', 'getStoreCategoryDetail']);
+    $r->addRoute('GET', '/store/category/detail2', ['StoreController', 'getStoreCategoryDetail2']);
+    $r->addRoute('GET', '/store/category/detail3', ['StoreController', 'getStoreCategoryDetail3']);
+    $r->addRoute('GET', '/store/category/product', ['StoreController', 'getStoreCategoryProduct']);
+    $r->addRoute('GET', '/store/pop-product', ['StoreController', 'getStorePopProduct']);
+    $r->addRoute('GET', '/store/sale-product', ['StoreController', 'getStoreSaleProduct']);
+    $r->addRoute('GET', '/store/today-deal', ['StoreController', 'getStoreTodayDeal']);
+    $r->addRoute('GET', '/store/product/{productIdx}', ['StoreController', 'getStoreProductDetail',]);
+    $r->addRoute('GET', '/store/product/review/{productIdx}', ['StoreController', 'getProductReview',]);
+    $r->addRoute('POST', '/store/product/review/{productIdx}', ['StoreController', 'createProductReview',]);
+    $r->addRoute('PATCH', '/store/product/review/{productIdx}', ['StoreController', 'updateProductReview',]);
+    $r->addRoute('POST', '/store/product-view', ['StoreController', 'createProductView',]);
+    $r->addRoute('GET', '/store/product-view', ['StoreController', 'getProductView',]);
+    $r->addRoute('GET', '/store/product/today-deal/{productIdx}', ['StoreController', 'getStoreTodayDealProductDetail',]);
+    $r->addRoute('GET', '/store/product-info/{productIdx}', ['StoreController', 'getStoreProductInfo',]);
+    $r->addRoute('POST', '/store/product/question', ['StoreController', 'createProductQuestion',]);
+    $r->addRoute('GET', '/store/product/question/{productIdx}', ['StoreController', 'getProductQuestion',]);
+    $r->addRoute('POST', '/store/product/basket', ['StoreController', 'createProductBasket',]);
+    $r->addRoute('POST', '/store/product/purchase', ['StoreController', 'createUserPurchase',]);
 
 
     $r->addRoute('GET', '/jwt', ['MainController', 'validateJwt']);
