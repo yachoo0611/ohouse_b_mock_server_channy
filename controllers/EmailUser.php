@@ -101,13 +101,20 @@ try {
 
         case "loginEmailUserNickName":
             http_response_code(200);
-            $nickName=$vars['nickName'];
-
-            if(isValidUserNickName($nickName)){
+//            $nickName=$vars['nickName'];
+//            $nickName = $_GET['nickName'];
+            if(isValidUserNickName($req->nickName)){
                 $res->isSuccess = FALSE;
                 $res->code = 200;
                 $res->message = "사용 중인 별명입니다.";
-                $res->result=loginEmailUserNickName($nickName,$nickName);
+                $res->result=loginEmailUserNickName($req->nickName,$req->nickName);
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                return;
+            }
+            elseif(is_null($req->nickName)){
+                $res->isSuccess = FALSE;
+                $res->code = 201;
+                $res->message = "닉네임을 입력하세요.";
                 echo json_encode($res, JSON_NUMERIC_CHECK);
                 return;
             }
@@ -201,10 +208,20 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
+
+            elseif(!isValidProduct($req->productIdx)or !is_numeric($req->productIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "유효하지 않은 productIdx입니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+
+            }
             elseif(validProductIdx($userIdx,$req->productIdx)){
                 deleteUserScrap($userIdx,$req->productIdx);
                 $res->isSuccess = FALSE;
-                $res->code = 101;
+                $res->code = 102;
                 $res->message = "이미 저장된 productIdx이므로 삭제하였습니다.";
                 echo json_encode($res, JSON_NUMERIC_CHECK);
                 addErrorLogs($errorLogs, $res, $req);
@@ -267,6 +284,14 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
+            elseif(!is_numeric($userIdx) or !isValidbasket($userIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "장바구니가 비어있습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
             else{
                 $res->result =getProductBasket($userIdx);
                 $res->price =getBasketPrice($userIdx);
@@ -294,13 +319,37 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
-
+            elseif(!is_numeric($req->productIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 102;
+                $res->message = "유효한 상품idx가 아닙니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            elseif(!is_numeric($req->productCount)){
+                $res->isSuccess = FALSE;
+                $res->code = 103;
+                $res->message = "유효한 상품count가 아닙니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            elseif(!isValidbasket2($userIdx,$req->productIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "장바구니에 저장되어있지 않은 상품idx입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            else{
             updateUserBasket($req->productCount,$userIdx,$req->productIdx);
             $res->isSuccess = TRUE;
             $res->code = 200;
             $res->message = "장바구니 변경에 성공하였습니다";
             echo json_encode($res, JSON_NUMERIC_CHECK);
-            break;
+            break;}
 
 
         case "deleteUserBasket":
@@ -321,13 +370,22 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
+            elseif(!is_numeric($userIdx) or !isValidbasket($userIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "장바구니가 비어있습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            else{
 
             deleteUserBasket($userIdx,$req->productIdx);
             $res->isSuccess = TRUE;
             $res->code = 200;
             $res->message = "장바구니 삭제에 성공하였습니다";
             echo json_encode($res, JSON_NUMERIC_CHECK);
-            break;
+            break;}
     }
 }catch (\Exception $e) {
     return getSQLErrorException($errorLogs, $e, $req);

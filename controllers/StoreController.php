@@ -110,29 +110,60 @@ try {
             $categoryDetail = $_GET['categoryDetail'];
             $categoryDetail2 = $_GET['categoryDetail2'];
             $categoryDetail3 = $_GET['categoryDetail3'];
-
+            if(!isVaildCategoryName($categoryName) or is_null($categoryName)){
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "categoryName이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+            elseif(!isVaildCategoryDetail($categoryDetail)){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "categoryDetail이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+            elseif(!isVaildCategoryDetail2($categoryDetail2)){
+                $res->isSuccess = FALSE;
+                $res->code = 102;
+                $res->message = "categoryDetail2이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+            elseif(!isVaildCategoryDetail3($categoryDetail3)){
+                $res->isSuccess = FALSE;
+                $res->code = 103;
+                $res->message = "categoryDetail3이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+            else{
             $res->count = getStoreCategoryProductCount($categoryName,$categoryDetail,$categoryDetail2,$categoryDetail3);
             $res->result =getStoreCategoryProduct($categoryName,$categoryDetail,$categoryDetail2,$categoryDetail3);
             $res->isSuccess = TRUE;
             $res->code = 100;
             $res->message = "카테고리별 상품 조회 조회 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK);
-            break;
+            break;}
 
         case "getStorePopProduct":
             http_response_code(200);
-//            $pageNum=$vars['pageNum'];
-//            $categoryName = $_GET['categoryName'];
-//            $categoryDetail = $_GET['categoryDetail'];
-//            $categoryDetail2 = $_GET['categoryDetail2'];
-//            $categoryDetail3 = $_GET['categoryDetail3'];
 
-            $res->result =getStorePopProduct();
+            if(is_null(getStorePopProduct())){
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "현재 인기상품이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+
+            else{$res->result =getStorePopProduct();
             $res->isSuccess = TRUE;
             $res->code = 200;
             $res->message = "인기 상품 조회 조회 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK);
-            break;
+            break;}
 
         case "getStoreSaleProduct":
             http_response_code(200);
@@ -155,19 +186,26 @@ try {
         case "getStoreTodayDeal":
             http_response_code(200);
 //            $pageNum=$vars['pageNum'];
-            $res->result =getStoreTodayDeal();
-            $res->isSuccess = TRUE;
-            $res->code = 200;
-            $res->message = "오늘의 딜 상품 조회 성공";
-            echo json_encode($res, JSON_NUMERIC_CHECK);
-            break;
-
+            if(is_null(getStoreTodayDeal())){
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "현재 오늘의 딜 상품이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }else {
+                $res->result = getStoreTodayDeal();
+                $res->isSuccess = TRUE;
+                $res->code = 200;
+                $res->message = "오늘의 딜 상품 조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
 
 
         case "getStoreProductDetail":
                 http_response_code(200);
                 $productIdx=$vars['productIdx'];
-                if(is_null(getStoreProductDetail($productIdx))){
+                if(is_null(getStoreProductDetail($productIdx))or !is_numeric($productIdx)){
 
                     $res->isSuccess = FALSE;
                     $res->code = 100;
@@ -188,7 +226,7 @@ try {
         case "getStoreProductInfo":
             http_response_code(200);
             $productIdx=$vars['productIdx'];
-            if(is_null(getStoreProductInfo($productIdx))){
+            if(is_null(getStoreProductInfo($productIdx)) or !is_numeric($productIdx)){
 
                 $res->isSuccess = FALSE;
                 $res->code = 100;
@@ -303,13 +341,21 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
-
+            elseif (!isValidReview($productIdx,$userIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 100;
+                $res->message = "변경하려는 리뷰가 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            else{
             updateProductReview($req->reviewText,$req->reviewImg,$req->stargazer,$productIdx,$userIdx);
             $res->isSuccess = TRUE;
             $res->code = 200;
             $res->message = "상품 리뷰 변경에 성공하였습니다";
             echo json_encode($res, JSON_NUMERIC_CHECK);
-            break;
+            break;}
 
 
         case "createProductView":
@@ -448,7 +494,7 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
-            elseif(!isValidProduct($req->productIdx)){
+            elseif(!isValidProduct($req->productIdx) or !is_numeric($req->productIdx)){
                 $res->isSuccess = FALSE;
                 $res->code = 101;
                 $res->message = "없는 상품입니다";
@@ -456,12 +502,17 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
+            elseif(!is_numeric($req->productCount)){
+                $res->isSuccess = FALSE;
+                $res->code = 102;
+                $res->message = "유효하지 않은 개수입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
             else{
                 createProductBasket($userIdx,$req->productIdx,$req->productCount);
-                $res->isSuccess = TRUE;
-                $res->code = 200;
-                $res->message = "장바구니 등록 성공";
-                echo json_encode($res, JSON_NUMERIC_CHECK);
+
                 break;}
 
         case "createUserPurchase":
@@ -483,20 +534,24 @@ try {
                 addErrorLogs($errorLogs, $res, $req);
                 return;
             }
-//            elseif(!isValidProduct($req->productIdx)){
-//                $res->isSuccess = FALSE;
-//                $res->code = 101;
-//                $res->message = "없는 상품입니다";
-//                echo json_encode($res, JSON_NUMERIC_CHECK);
-//                addErrorLogs($errorLogs, $res, $req);
-//                return;
-//            }
-            else{
-                createUserPurchase($req->productIdx,$userIdx,$req->phoneNumber,$req->address);
-                $res->isSuccess = TRUE;
-                $res->code = 200;
-                $res->message = "구매 등록 성공";
+            elseif(!isValidProduct($req->productIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 101;
+                $res->message = "없는 상품입니다";
                 echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            elseif(!isValidProductQuantity($req->productIdx)){
+                $res->isSuccess = FALSE;
+                $res->code = 102;
+                $res->message = "현재 재고가 없는 상품입니다";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                addErrorLogs($errorLogs, $res, $req);
+                return;
+            }
+            else{
+                createUserPurchase($userIdx,$req->productIdx,$req->productCount,$req->phoneNumber,$req->address,$req->request);
                 break;}
 
 

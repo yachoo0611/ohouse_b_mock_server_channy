@@ -210,3 +210,70 @@ function isValidProduct($productIdx){
 
 
 }
+function isValidProductQuantity($productIdx){
+    $pdo = pdoSqlConnect();
+    $query = "SELECT productQuantity as exist FROM product WHERE productIdx=?;";
+
+
+    $st = $pdo->prepare($query);
+    //    $st->execute([$param,$param]);
+    $st->execute([$productIdx]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st=null;$pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
+function isValidProductCount($productCount){
+    $pdo = pdoSqlConnect();
+    $query = "SELECT productQuantity as exist FROM product WHERE productIdx=?;";
+
+
+    $st = $pdo->prepare($query);
+    //    $st->execute([$param,$param]);
+    $st->execute([$productCount]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st=null;$pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
+
+function isValidbasket($userIdx){
+    $pdo = pdoSqlConnect();
+    $query = "SELECT userIdx as exist FROM userBasket WHERE userIdx=?;";
+
+
+    $st = $pdo->prepare($query);
+    //    $st->execute([$param,$param]);
+    $st->execute([$userIdx]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st=null;$pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
+
+
+function isValidbasket2($userIdx,$productIdx){
+    $pdo = pdoSqlConnect();
+    $query = "SELECT productIdx as exist FROM userBasket WHERE userIdx=? and productIdx=?;";
+
+
+    $st = $pdo->prepare($query);
+    //    $st->execute([$param,$param]);
+    $st->execute([$userIdx,$productIdx]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st=null;$pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}

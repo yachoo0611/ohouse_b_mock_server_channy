@@ -252,7 +252,7 @@ FROM product
          inner join purchase p on product.productIdx = p.productIdx
 where product.todayDeal is not null
   and now() < product.todayDeal
-group by p.productIdx;";
+group by p.productIdx order by rand();";
 //    $pageNum=($pageNum-1)*4;
     $st = $pdo->prepare($query);
 //    $st->bindParam(':pageNum',$pageNum,PDO::PARAM_INT);
@@ -286,14 +286,8 @@ function getStoreProductDetail($productIdx)
        format(TRUNCATE(product.productPrice*(0.0001*(100-product.productDiscount)),-3),0) as point,       
        product.freeOrder,
        product.lowPrice,
-       pI.productDetailImg1,
-       ifnull(pI.productDetailImg2, '이미지 없음') as productDetailImg2,
-       ifnull(pI.productDetailImg3, '이미지 없음') as productDetailImg3,
-       ifnull(pI.productDetailImg4, '이미지 없음') as productDetailImg4,
-       ifnull(pI.productDetailImg5, '이미지 없음') as productDetailImg5,
-       ifnull(pI.productDetailImg6, '이미지 없음') as productDetailImg6,
-       ifnull(pI.productDetailImg7, '이미지 없음') as productDetailImg7,
-       ifnull(pI.productDetailImg8, '이미지 없음') as productDetailImg8
+       pI.productDetailImg1
+
 from product
 inner join productImg pI on product.productIdx = pI.productIdx
 left join review r on pI.productIdx = r.productIdx
@@ -316,12 +310,8 @@ group by product.productIdx;";
 function getStoreProductInfo($productIdx)
 {
     $pdo = pdoSqlConnect();
-    $query = "select productIdx,
-       productInfoImg1,
-       productInfoImg2,
-       productInfoImg3,
-       productInfoImg4,
-       productInfoImg5
+    $query = "select 
+       productInfoImg
 from productInfo where productIdx=?;";
     $st = $pdo->prepare($query);
 
@@ -334,7 +324,7 @@ from productInfo where productIdx=?;";
     $st = null;
     $pdo = null;
 
-    return $res[0];
+    return $res;
 }
 
 function getStoreTodayDealProductDetail($productIdx)
@@ -356,14 +346,8 @@ function getStoreTodayDealProductDetail($productIdx)
         count(review.stargazer) as reviewCount,
         product.freeOrder,
         product.lowPrice,
-              pI.productDetailImg1,
-       ifnull(pI.productDetailImg2, '이미지 없음') as productDetailImg2,
-       ifnull(pI.productDetailImg3, '이미지 없음') as productDetailImg3,
-       ifnull(pI.productDetailImg4, '이미지 없음') as productDetailImg4,
-       ifnull(pI.productDetailImg5, '이미지 없음') as productDetailImg5,
-       ifnull(pI.productDetailImg6, '이미지 없음') as productDetailImg6,
-       ifnull(pI.productDetailImg7, '이미지 없음') as productDetailImg7,
-       ifnull(pI.productDetailImg8, '이미지 없음') as productDetailImg8
+              pI.productDetailImg1
+
 FROM product
          left outer join review on product.productIdx =  review.productIdx
          inner join purchase p on product.productIdx = p.productIdx
@@ -388,7 +372,7 @@ group by p.productIdx order by count(p.productIdx) desc;";
 function createProductReview($productIdx,$userIdx,$reviewText,$reviewImg,$stargazer)
 {
     $pdo = pdoSqlConnect();
-    $query = "INSERT INTO review (productIdx, userIdx, reviewText, stargazer, reviewImg) VALUES (?,?,?,?,?);";
+    $query = "INSERT INTO review (productIdx, userIdx, reviewText, reviewImg, stargazer) VALUES (?,?,?,?,?);";
 
     $st = $pdo->prepare($query);
     $st->execute([$productIdx,$userIdx,$reviewText,$reviewImg,$stargazer]);
@@ -484,39 +468,81 @@ where productQuestion.productIdx=?;
 }
 
 
+
 function createProductBasket($userIdx,$productIdx,$productCount)
-{
-    $pdo = pdoSqlConnect();
-    $query = "INSERT INTO userBasket (userIdx,productIdx,productCount) VALUES (?,?,?);    ";
-
-    $st = $pdo->prepare($query);
-    $st->execute([$userIdx,$productIdx,$productCount]);
-
-    $st = null;
-    $pdo = null;
-
-}
-
-function createUserPurchase($productIdx,$userIdx,$phoneNumber,$address)
 {
     $pdo = pdoSqlConnect();
     try {
         $pdo->beginTransaction();
-        $query="INSERT INTO purchase (productIdx,userIdx,phoneNumber,address) VALUES (?,?,?,?);";
 
-        if(!is_numeric($productIdx)){
-            $pdo->rollBack();
-            $res = (object)Array();
 
-            $res->code=100;
-            $res->message="트랜잭션실패";
-            echo json_encode($res,JSON_NUMERIC_CHECK);
-
-            return false;
-        }
+        $query = "INSERT INTO userBasket (userIdx,productIdx,productCount) VALUES (?,?,?);    ";
         $st=$pdo->prepare($query);
-        $st->execute([$productIdx,$userIdx,$phoneNumber,$address]);
+        $st->execute([$userIdx,$productIdx,$productCount]);
+
+        $query="select if(product.productQuantity-uB.productCount<0,0,1) AS count from product
+inner join userBasket uB on product.productIdx = uB.productIdx
+where product.productIdx=? and uB.userIdx=?
+  and uB.basketIdx=(select max(uB.basketIdx) from userBasket where uB.userIdx=?);
+";
+        $st=$pdo->prepare($query);
+        $st->execute([$productIdx,$userIdx,$userIdx]);
         $pdo->commit();
+        $res = (object)Array();
+        $res->code=200;
+        $res->message="장바구니 저장 성공";
+        echo json_encode($res,JSON_NUMERIC_CHECK);
+    }
+    catch (Exception $e){
+        $pdo->rollBack();
+        $res = (object)Array();
+        echo $e->getMessage();
+        $res->code=100;
+        $res->message="장바구니 상품의 개수가 잔여 상품 개수보다 많습니다";
+        echo json_encode($res,JSON_NUMERIC_CHECK);
+        return $res;
+
+    }
+    $st=null;
+    $pdo=null;
+}
+
+function createUserPurchase($userIdx,$productIdx,$productCount,$phoneNumber,$address,$request)
+{
+    $pdo = pdoSqlConnect();
+    try {
+        $pdo->beginTransaction();
+
+//구매테이블에 저장됨과 동시에 (insert)
+        $query="INSERT INTO purchase (userIdx,productIdx,productCount,phoneNumber,address,request)
+ VALUES (?,?,?,?,?,?);";
+        $st=$pdo->prepare($query);
+        $st->execute([$userIdx,$productIdx,$productCount,$phoneNumber,$address,$request]);
+//상품테이블에 남은 잔고 수량이 줄고 (update)
+        $query="update product inner join purchase on product.productIdx = purchase.productIdx
+set product.productQuantity=product.productQuantity-purchase.productCount
+where purchase.productIdx=? and purchase.userIdx=? and purchase.purchaseIdx=(select max(purchase.purchaseIdx) from purchase where purchase.userIdx=?) ;
+";
+        $st=$pdo->prepare($query);
+        $st->execute([$productIdx,$userIdx,$userIdx]);
+//장바구니에 있는 상품이 사라진다. (delete)
+        $query="DELETE FROM userBasket WHERE userIdx=? and productIdx=?;";
+        $st=$pdo->prepare($query);
+        $st->execute([$userIdx,$productIdx]);
+//유저테이블에 포인트가 쌓인다 (update)
+        $query="update user inner join purchase p on user.userIdx = p.userIdx
+    inner join product p2 on p.productIdx = p2.productIdx
+set user.userPoint = user.userPoint + format(TRUNCATE(p2.productPrice*(0.01*(100-p2.productDiscount)),-3),0)
+where user.userIdx=? and p2.productIdx=? ;";
+        $st=$pdo->prepare($query);
+        $st->execute([$userIdx,$productIdx]);
+
+
+        $pdo->commit();
+        $res = (object)Array();
+        $res->code=200;
+        $res->message="트랜잭션 성공";
+        echo json_encode($res,JSON_NUMERIC_CHECK);
     }
     catch (Exception $e){
         $pdo->rollBack();
